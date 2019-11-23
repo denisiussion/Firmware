@@ -299,6 +299,7 @@ struct pwm_output_rc_config {
 #define DSHOT150					150000u		//Hz
 
 #define DSHOT_MAX_THROTTLE			1999
+#define DSHOT_INPUT_FREQ_COEFF(x)	((x)*5/4)
 
 typedef enum {
 	DShot_cmd_motor_stop = 0,

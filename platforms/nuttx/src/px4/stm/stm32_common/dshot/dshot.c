@@ -46,8 +46,10 @@
 #include <drivers/drv_pwm_output.h>
 
 
-#define MOTOR_PWM_BIT_1				14u
-#define MOTOR_PWM_BIT_0				7u
+#define MOTOR_PWM_BIT_1				(168000000/DSHOT600)*14/20u
+#define MOTOR_PWM_BIT_0				(168000000/DSHOT600)*7/20u
+//#define MOTOR_PWM_BIT_1				14u
+//#define MOTOR_PWM_BIT_0				7u
 #define DSHOT_TIMERS				MAX_IO_TIMERS
 #define MOTORS_NUMBER				DIRECT_PWM_OUTPUT_CHANNELS
 #define ONE_MOTOR_DATA_SIZE			16u
@@ -81,7 +83,7 @@ bool bidirectional[DIRECT_PWM_OUTPUT_CHANNELS] = {false};
 
 static dshot_handler_t dshot_handler[DSHOT_TIMERS] = {};
 static uint16_t *motor_buffer = NULL;
-#define INPUT_SIZE	500
+#define INPUT_SIZE	300
 static uint32_t dshot_burst_input[INPUT_SIZE] = {0xFF};
 static uint8_t dshot_burst_buffer_array[DSHOT_TIMERS * DSHOT_BURST_BUFFER_SIZE(MAX_NUM_CHANNELS_PER_TIMER)]
 __attribute__((aligned(PX4_ARCH_DCACHE_LINESIZE))); // DMA buffer
@@ -225,6 +227,25 @@ void dshot_input_dma_callback(DMA_HANDLE handle, uint8_t status, void *arg)
 	io_timer_update_dma_req(timer, false);
 	io_timer_enabe_input(timer, false);
 }
+
+/*
+0 -> 19 0b11001
+1 -> 1b 0b11011
+2 -> 12 0b10010
+3 -> 13 0b10011
+4 -> 1d 0b11101
+5 -> 15 0b10101
+6 -> 16 0b10110
+7 -> 17 0b10111
+8 -> 1a 0b11010
+9 -> 09 0b01001
+a -> 0a 0b01010
+b -> 0b 0b01011
+c -> 1e 0b11110
+d -> 0d 0b01101
+e -> 0e 0b01110
+f -> 0f 0b01111
+*/
 
 /**
 * bits 	1-11	- throttle value (0-47 are reserved, 48-2047 give 2000 steps of throttle resolution)

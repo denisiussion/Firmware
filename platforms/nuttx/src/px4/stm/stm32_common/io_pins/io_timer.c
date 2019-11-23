@@ -492,6 +492,16 @@ static inline void io_timer_set_oneshot_mode(unsigned timer)
 	rEGR(timer) = GTIM_EGR_UG;
 }
 
+static inline void io_timer_dshot_set_freq(unsigned timer, unsigned freq)
+{
+
+	//rARR(timer)  = DSHOT_MOTOR_PWM_BIT_WIDTH;
+	//rPSC(timer)  = ((int)(io_timers[timer].clock_freq / freq) / DSHOT_MOTOR_PWM_BIT_WIDTH) - 1;
+
+	rPSC(timer)  = 0;
+	rARR(timer)  = (io_timers[timer].clock_freq/freq);
+}
+
 void io_timer_update_dma_req(uint8_t timer, bool enable)
 {
 	if (enable) {
@@ -507,19 +517,61 @@ void io_timer_enabe_input(uint8_t timer, bool enable)
 	uint32_t ccmr1 = rCCMR1(timer);
 	uint32_t ccmr2 = rCCMR2(timer);
 
+	static uint32_t tmp_ccmr1;
+	static uint32_t tmp_ccmr2;
+
 	if (enable) {
+
+		tmp_ccmr1 = rCCMR1(timer);
+		tmp_ccmr2 = rCCMR2(timer);
 
 		rBDTR(timer) &= ~ATIM_BDTR_MOE;
 		ccmr1 |= GTIM_CCMR_CCS_CCIN1 << GTIM_CCMR1_CC1S_SHIFT;
 		ccmr1 |= GTIM_CCMR_CCS_CCIN1 << GTIM_CCMR1_CC2S_SHIFT;
+
+		ccmr1 &= ~GTIM_CCMR1_IC1PSC_MASK;
+		ccmr1 |= GTIM_CCMR_ICPSC_NOPSC << GTIM_CCMR1_IC1PSC_SHIFT;	// Disable input prescaler for channel 1
+		ccmr1 &= ~GTIM_CCMR1_IC1F_MASK;
+		ccmr1 |= GTIM_CCMR_ICF_NOFILT << GTIM_CCMR1_IC1F_SHIFT; 	// Disable input filter for channel 1
+
+		ccmr1 &= ~GTIM_CCMR1_IC2PSC_MASK;
+		ccmr1 |= GTIM_CCMR_ICPSC_NOPSC << GTIM_CCMR1_IC2PSC_SHIFT; 	// Disable input prescaler for channel 2
+		ccmr1 &= ~GTIM_CCMR1_IC2F_MASK;
+		ccmr1 |= GTIM_CCMR_ICF_NOFILT << GTIM_CCMR1_IC2F_SHIFT; 	// Disable input filter for channel 2
+
 		ccmr2 |= GTIM_CCMR_CCS_CCIN1 << GTIM_CCMR2_CC3S_SHIFT;
 		ccmr2 |= GTIM_CCMR_CCS_CCIN1 << GTIM_CCMR2_CC4S_SHIFT;
+
+		ccmr2 &= ~GTIM_CCMR2_IC3PSC_MASK;
+		ccmr2 |= GTIM_CCMR_ICPSC_NOPSC << GTIM_CCMR2_IC3PSC_SHIFT;	// Disable input prescaler for channel 3
+		ccmr2 &= ~GTIM_CCMR2_IC3F_MASK;
+		ccmr2 |= GTIM_CCMR_ICF_NOFILT << GTIM_CCMR2_IC3F_SHIFT; 	// Disable input filter for channel 3
+
+		ccmr2 &= ~GTIM_CCMR2_IC4PSC_MASK;
+		ccmr2 |= GTIM_CCMR_ICPSC_NOPSC << GTIM_CCMR2_IC4PSC_SHIFT;	// Disable input prescaler for channel 4
+		ccmr2 &= ~GTIM_CCMR2_IC4F_MASK;
+		ccmr2 |= GTIM_CCMR_ICF_NOFILT << GTIM_CCMR2_IC4F_SHIFT; 	// Disable input filter for channel 4
+
+		//activate both edges
+		rCCER(timer) |= (ATIM_CCER_CC1P | ATIM_CCER_CC2P | ATIM_CCER_CC3P | ATIM_CCER_CC4P);
+		rCCER(timer) |= (ATIM_CCER_CC1NP | ATIM_CCER_CC2NP | ATIM_CCER_CC3NP | ATIM_CCER_CC4NP);
+
+		rARR(timer)  = (io_timers[timer].clock_freq/DSHOT_INPUT_FREQ_COEFF(DSHOT600));
+
+
+
 	} else {
+
+		ccmr1 |= tmp_ccmr1;
+		ccmr2 |= tmp_ccmr2;
+
 		rBDTR(timer) |= ATIM_BDTR_MOE;
 		ccmr1 &= ~(GTIM_CCMR_CCS_CCIN1 << GTIM_CCMR1_CC1S_SHIFT);
 		ccmr1 &= ~(GTIM_CCMR_CCS_CCIN1 << GTIM_CCMR1_CC2S_SHIFT);
 		ccmr2 &= ~(GTIM_CCMR_CCS_CCIN1 << GTIM_CCMR2_CC3S_SHIFT);
 		ccmr2 &= ~(GTIM_CCMR_CCS_CCIN1 << GTIM_CCMR2_CC4S_SHIFT);
+		rCCER(timer) |= (ATIM_CCER_CC1P | ATIM_CCER_CC2P | ATIM_CCER_CC3P | ATIM_CCER_CC4P);
+		io_timer_dshot_set_freq(timer, DSHOT600);
 	}
 
 	rCCER(timer) &= ~(ATIM_CCER_CC1E | ATIM_CCER_CC2E | ATIM_CCER_CC3E | ATIM_CCER_CC4E);
@@ -557,8 +609,8 @@ int io_timer_set_dshot_mode(uint8_t timer, unsigned dshot_pwm_freq, uint8_t dma_
 	rCCER(timer) = ATIM_CCER_CC1P | ATIM_CCER_CC2P | ATIM_CCER_CC3P | ATIM_CCER_CC4P;
 
 	if (OK == ret_val) {
-		rARR(timer)  = DSHOT_MOTOR_PWM_BIT_WIDTH;
-		rPSC(timer)  = ((int)(io_timers[timer].clock_freq / dshot_pwm_freq) / DSHOT_MOTOR_PWM_BIT_WIDTH) - 1;
+
+		io_timer_dshot_set_freq(timer, dshot_pwm_freq);
 		rEGR(timer)  = ATIM_EGR_UG;
 		rDCR(timer)  = (io_timers[timer].dshot.start_ccr_register | tim_dma_burst_length);
 	}
