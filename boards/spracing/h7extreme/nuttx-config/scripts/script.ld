@@ -143,7 +143,6 @@ SECTIONS
 		*modules__mc_att_control.a:*(.text* .rodata*)
 		*modules__mc_rate_control.a:*(.text* .rodata*)
 		*modules__rc_update.a:*(.text* .rodata*)
-		*drivers__mpu6000.a:*(.text* .rodata*)
 		*drivers__imu__invensense__icm20602.a:*(.text* .rodata*)
 		*drivers__device.a:*(.text* .rodata*)
 		*drivers__pwm_out.a:*(.text* .rodata*)
@@ -161,6 +160,10 @@ SECTIONS
 		_start_sram = ABSOLUTE(.);
 		. = ALIGN(4);
 
+		*drivers__atxxxx.a:*(.text* .rodata*)
+		*PositionControl.a:*(.text* .rodata*)
+		*RateControl.a:*(.text* .rodata*)
+		*vehicle_imu.a:*(.text* .rodata*)
 		*drivers__dshot.a:*(.text* .rodata*)
 		*modules__flight_mode_manager.a:*(.text* .rodata*)
 		*modules__mc_pos_control.a:*(.text* .rodata*)

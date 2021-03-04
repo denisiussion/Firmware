@@ -8,10 +8,21 @@ board_adc start
 #mpu6000 -s -b 2 -R 11 -T 20602 start # SPI 2
 #mpu6000 -s -b 3 -R 10 -T 20602 start # SPI 3
 icm20602 -s -b 2 -R 5 start # SPI 2
-icm20602 -s -b 3 -R 4 start # SPI 3
+#icm20602 -s -b 3 -R 4 start # SPI 3
 
 # Internal I2C bus
 bmp388 -I start
 
+if ! hmc5883 -I -r 2 start
+then
+	if ! ist8310 -I -R 10 start
+	then
+		param set-default SYS_HAS_MAG 0
+	else
+		param set-default SYS_HAS_MAG 1
+	fi
+else
+	param set-default SYS_HAS_MAG 1
+fi
 
 
