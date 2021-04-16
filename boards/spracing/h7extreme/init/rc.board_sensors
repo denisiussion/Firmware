@@ -13,9 +13,9 @@ icm20602 -s -b 2 -R 5 start # SPI 2
 # Internal I2C bus
 bmp388 -I start
 
-if ! hmc5883 -I -r 2 start
+if ! lis2mdl -I -R 2 start
 then
-	if ! ist8310 -I -R 10 start
+	if ! qmc5883l -I -R 2 start
 	then
 		param set-default SYS_HAS_MAG 0
 	else
